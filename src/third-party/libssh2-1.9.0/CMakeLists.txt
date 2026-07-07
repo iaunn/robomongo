@@ -106,7 +106,7 @@ target_compile_definitions(libssh2
 
 target_link_libraries(libssh2
     PUBLIC
-       ssl crypto)
+       OpenSSL::SSL OpenSSL::Crypto)
 
 target_include_directories(libssh2
     PUBLIC
