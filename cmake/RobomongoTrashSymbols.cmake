@@ -16,7 +16,7 @@ elseif(SYSTEM_WINDOWS)
 endif()
 
 set(PROJECT_NAME "Robo 3T")
-set(PROJECT_NAME_TITLE ${PROJECT_NAME})
+set(PROJECT_NAME_TITLE "${PROJECT_NAME} (iaunn edition)")
 set(PROJECT_DOMAIN "www.robomongo.org")
 set(PROJECT_COMPANYNAME "3T Software Labs Ltd")
 set(PROJECT_COPYRIGHT "Copyright (C) 2014-2017 ${PROJECT_COMPANYNAME} All Rights Reserved.")
