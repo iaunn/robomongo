@@ -1,6 +1,6 @@
 #pragma once
 
-#ifndef __linux__  // ---------------------- Windows, macOS impl. --------------------------// 
+#if !defined(__linux__) && !defined(DISABLE_WEBENGINE)  // ---------------------- Windows, macOS impl. --------------------------// 
 
 #include <QWidget>
 #include <QWebEnginePage>

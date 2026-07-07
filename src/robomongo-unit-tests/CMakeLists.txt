@@ -70,9 +70,9 @@ elseif(SYSTEM_MACOSX)
 #     endforeach()
 endif()
 
-# Disable WebEngineWidgets for Linux
+# Disable WebEngineWidgets for Linux or if DISABLE_WEBENGINE is set
 SET(WebEngineWidgets "Qt5::WebEngineWidgets") 
-if(SYSTEM_LINUX)
+if(SYSTEM_LINUX OR DISABLE_WEBENGINE)
    SET(WebEngineWidgets)  
 endif()
 
