@@ -165,7 +165,6 @@ namespace Robomongo
         _whatsNewText->setText(
             "<h3>Welcome to the iaunn edition of Robo 3T!</h3>"
             "<p>This version features native Apple Silicon support and full compatibility with MongoDB 7.0 & 8.3.</p>"
-            "<p>You can edit this HTML directly in <code>WelcomeTab.cpp</code>.</p>"
         );
         _whatsNewText->setTextInteractionFlags(Qt::TextSelectableByMouse);
         _whatsNewText->setTextFormat(Qt::RichText);
