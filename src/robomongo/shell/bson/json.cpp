@@ -42,7 +42,9 @@
 #include "mongo/platform/strtoll.h"
 #include "mongo/util/base64.h"
 #include "mongo/util/hex.h"
+#ifndef MONGO_VERSION_GE_44
 #include "mongo/util/log.h"
+#endif
 #include "mongo/util/str.h"
 #include "mongo/util/time_support.h"
 #include "robomongo/core/HexUtils.h"

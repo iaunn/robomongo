@@ -47,32 +47,93 @@ set(MongoDB_DEFINITIONS
     _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING
 )
 
+if(EXISTS "${MongoDB_DIR}/src/mongo/log/log.h")
+    list(APPEND MongoDB_DEFINITIONS MONGO_VERSION_GE_44)
+endif()
+
+# Detect MozJS version inside MongoDB source
+file(GLOB MOZJS_PATHS RELATIVE ${MongoDB_DIR}/src/third_party ${MongoDB_DIR}/src/third_party/mozjs-*)
+if(MOZJS_PATHS)
+    list(GET MOZJS_PATHS 0 MOZJS_VER)
+else()
+    set(MOZJS_VER mozjs-60)
+endif()
+
+# Detect Boost version inside MongoDB source
+file(GLOB BOOST_PATHS RELATIVE ${MongoDB_DIR}/src/third_party ${MongoDB_DIR}/src/third_party/boost-*)
+if(BOOST_PATHS)
+    list(GET BOOST_PATHS 0 BOOST_VER)
+else()
+    set(BOOST_VER boost-1.70.0)
+endif()
+
+# Detect PCRE version inside MongoDB source
+file(GLOB PCRE_PATHS RELATIVE ${MongoDB_DIR}/src/third_party ${MongoDB_DIR}/src/third_party/pcre-*)
+if(PCRE_PATHS)
+    list(GET PCRE_PATHS 0 PCRE_VER)
+else()
+    set(PCRE_VER pcre-8.42)
+endif()
+
 # Set common compiler include directories
-set(MOZJS_VER mozjs-60)
 set(MongoDB_INCLUDE_DIRS
     ${MongoDB_DIR}/src    
     ${MongoDB_DIR}/src/third_party/abseil-cpp-master/abseil-cpp
-    ${MongoDB_DIR}/src/third_party/boost-1.70.0    
+    ${MongoDB_DIR}/src/third_party/${BOOST_VER}
     ${MongoDB_DIR}/src/third_party/fmt/dist/include
     ${MongoDB_DIR}/src/third_party/${MOZJS_VER}/include
     ${MongoDB_DIR}/src/third_party/${MOZJS_VER}/mongo_sources
-    ${MongoDB_DIR}/src/third_party/pcre-8.42
+    ${MongoDB_DIR}/src/third_party/${PCRE_VER}
     ${MongoDB_DIR}/src/third_party/SafeInt
     ${MongoDB_BUILD_DIR}
 )
 
+if(NOT COMMAND target_architecture)
+    include(RobomongoTargetArch)
+endif()
+target_architecture(target_arch)
+
 if(SYSTEM_LINUX)
     set(MongoDB_OBJECT_LIST_PLATFORM_PART linux)
-    list(APPEND MongoDB_INCLUDE_DIRS
-        ${MongoDB_DIR}/src/third_party/${MOZJS_VER}/platform/x86_64/linux/include)
+    if(target_arch STREQUAL "arm64" OR target_arch STREQUAL "aarch64")
+        if(EXISTS "${MongoDB_DIR}/src/third_party/${MOZJS_VER}/platform/aarch64/linux/include")
+            list(APPEND MongoDB_INCLUDE_DIRS
+                ${MongoDB_DIR}/src/third_party/${MOZJS_VER}/platform/aarch64/linux/include)
+        elseif(EXISTS "${MongoDB_DIR}/src/third_party/${MOZJS_VER}/platform/arm64/linux/include")
+            list(APPEND MongoDB_INCLUDE_DIRS
+                ${MongoDB_DIR}/src/third_party/${MOZJS_VER}/platform/arm64/linux/include)
+        else()
+            list(APPEND MongoDB_INCLUDE_DIRS
+                ${MongoDB_DIR}/src/third_party/${MOZJS_VER}/platform/x86_64/linux/include)
+        endif()
+    else()
+        list(APPEND MongoDB_INCLUDE_DIRS
+            ${MongoDB_DIR}/src/third_party/${MOZJS_VER}/platform/x86_64/linux/include)
+    endif()
 elseif(SYSTEM_WINDOWS)
     set(MongoDB_OBJECT_LIST_PLATFORM_PART windows)
     list(APPEND MongoDB_INCLUDE_DIRS
         ${MongoDB_DIR}/src/third_party/${MOZJS_VER}/platform/x86_64/windows/include)
 elseif(SYSTEM_MACOSX)
     set(MongoDB_OBJECT_LIST_PLATFORM_PART macosx)
-    list(APPEND MongoDB_INCLUDE_DIRS
-        ${MongoDB_DIR}/src/third_party/${MOZJS_VER}/platform/x86_64/macOS/include)
+    if(target_arch STREQUAL "arm64")
+        if(EXISTS "${MongoDB_DIR}/src/third_party/${MOZJS_VER}/platform/aarch64/macOS/include")
+            list(APPEND MongoDB_INCLUDE_DIRS
+                ${MongoDB_DIR}/src/third_party/${MOZJS_VER}/platform/aarch64/macOS/include)
+        elseif(EXISTS "${MongoDB_DIR}/src/third_party/${MOZJS_VER}/platform/aarch64/mac/include")
+            list(APPEND MongoDB_INCLUDE_DIRS
+                ${MongoDB_DIR}/src/third_party/${MOZJS_VER}/platform/aarch64/mac/include)
+        elseif(EXISTS "${MongoDB_DIR}/src/third_party/${MOZJS_VER}/platform/arm64/macOS/include")
+            list(APPEND MongoDB_INCLUDE_DIRS
+                ${MongoDB_DIR}/src/third_party/${MOZJS_VER}/platform/arm64/macOS/include)
+        else()
+            list(APPEND MongoDB_INCLUDE_DIRS
+                ${MongoDB_DIR}/src/third_party/${MOZJS_VER}/platform/x86_64/macOS/include)
+        endif()
+    else()
+        list(APPEND MongoDB_INCLUDE_DIRS
+            ${MongoDB_DIR}/src/third_party/${MOZJS_VER}/platform/x86_64/macOS/include)
+    endif()
 elseif(SYSTEM_FREEBSD)
     set(MongoDB_OBJECT_LIST_PLATFORM_PART freebsd)
     list(APPEND MongoDB_INCLUDE_DIRS
@@ -124,7 +185,12 @@ execute_process(
     WORKING_DIRECTORY ${MongoDB_DIR}
     OUTPUT_VARIABLE MongoDB_RECENT_TAG
     OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
 )
+
+if(NOT MongoDB_RECENT_TAG)
+    set(MongoDB_RECENT_TAG "4.4.0")
+endif()
 
 # Handle the QUIETLY and REQUIRED arguments and set ALSA_FOUND to TRUE if
 # all listed variables are TRUE

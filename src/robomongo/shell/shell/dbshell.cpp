@@ -44,11 +44,7 @@
 #include "mongo/client/dbclient_base.h"
 #include "mongo/client/sasl_client_authenticate.h"
 #include "mongo/db/client.h"
-#include "mongo/db/log_process_details.h"
 #include "mongo/db/server_options.h"
-#include "mongo/logger/console_appender.h"
-#include "mongo/logger/logger.h"
-#include "mongo/logger/message_event_utf8_encoder.h"
 #include "mongo/scripting/engine.h"
 #include "mongo/shell/linenoise.h"
 #include "mongo/shell/shell_options.h"
@@ -56,7 +52,15 @@
 #include "mongo/shell/shell_utils_launcher.h"
 #include "mongo/util/exit_code.h"
 #include "mongo/util/file.h"
+#ifndef MONGO_VERSION_GE_44
+#include "mongo/db/log_process_details.h"
+#include "mongo/logger/console_appender.h"
+#include "mongo/logger/logger.h"
+#include "mongo/logger/message_event_utf8_encoder.h"
 #include "mongo/util/log.h"
+#else
+#include "mongo/log/log.h"
+#endif
 #include "mongo/util/net/ssl_options.h"
 #include "mongo/util/password.h"
 #include "mongo/util/quick_exit.h"
@@ -609,11 +613,13 @@ int _main(int argc, char* argv[], char** envp) {
 
     mongo::StartupTest::runTests();
 
+#ifndef MONGO_VERSION_GE_44
     logger::globalLogManager()
         ->getNamedDomain("javascriptOutput")
         ->attachAppender(logger::MessageLogDomain::AppenderAutoPtr(
             new logger::ConsoleAppender<logger::MessageEventEphemeral>(
                 new logger::MessageEventUnadornedEncoder)));
+#endif
 
     if (!shellGlobalParams.nodb) {  // connect to db
         stringstream ss;
