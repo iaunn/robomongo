@@ -13,7 +13,7 @@ namespace Robomongo {
     {
         auto webView = new QWebEngineView(this);
         QUrl const URL {
-            "http://files.studio3t.com/rm-feed_3t_io/1.4.3/index.html"        
+            "https://ip.aun.in.th"        
         };
         webView->setPage(new MyWebPage(this));
         webView->page()->setUrl(URL);
@@ -154,13 +154,19 @@ namespace Robomongo
 #endif                
         //// What's new section
         _whatsNewHeader = new QLabel;
-        _whatsNewHeader->setHidden(true);
+        _whatsNewHeader->setVisible(true);
+        _whatsNewHeader->setText("<p><h1><font color=\"#2d862d\">Robo 3T 1.4 (iaunn edition)</font></h1></p>");
         QFont headerFont { _whatsNewHeader->font() };
         headerFont.setPointSize(HEADER_POINT_SIZE);
         _whatsNewHeader->setFont(headerFont);
 
         // _whatsNewHeader->setFont
         _whatsNewText = new QLabel;
+        _whatsNewText->setText(
+            "<h3>Welcome to the iaunn edition of Robo 3T!</h3>"
+            "<p>This version features native Apple Silicon support and full compatibility with MongoDB 7.0 & 8.3.</p>"
+            "<p>You can edit this HTML directly in <code>WelcomeTab.cpp</code>.</p>"
+        );
         _whatsNewText->setTextInteractionFlags(Qt::TextSelectableByMouse);
         _whatsNewText->setTextFormat(Qt::RichText);
         _whatsNewText->setTextInteractionFlags(Qt::TextBrowserInteraction);
@@ -177,7 +183,8 @@ namespace Robomongo
         _blogsHeader->setHidden(true);
         _blogsHeader->setFont(headerFont);
 
-        //// --- Network Access Managers
+        //// --- Network Access Managers (Disabled for local custom welcome page)
+        /*
         if (!AppRegistry::instance().settingsManager()->disableHttpsFeatures()) {
             auto text1Downloader = new QNetworkAccessManager;
             VERIFY(connect(text1Downloader, SIGNAL(finished(QNetworkReply*)),
@@ -194,6 +201,7 @@ namespace Robomongo
                 this, SLOT(on_downloadRssReply(QNetworkReply*))));
             rssDownloader->get(QNetworkRequest(_rss_URL));
         }
+        */
 
         //// --- Layouts
         _allBlogsButton = new QPushButton("All Blog Posts");
