@@ -66,10 +66,17 @@ if(SYSTEM_WINDOWS)
         "${OpenSSL_DIR}/libcrypto-1_1-x64.dll"
         DESTINATION ${bin_dir})
 elseif(SYSTEM_MACOSX)
+    if(OPENSSL_VERSION VERSION_GREATER_EQUAL "3.0.0")
+        set(OPENSSL_SSL_NAME "libssl.3.dylib")
+        set(OPENSSL_CRYPTO_NAME "libcrypto.3.dylib")
+    else()
+        set(OPENSSL_SSL_NAME "libssl.1.1.dylib")
+        set(OPENSSL_CRYPTO_NAME "libcrypto.1.1.dylib")
+    endif()
     install(
         FILES 
-        "${OpenSSL_DIR}/libssl.1.1.dylib"
-        "${OpenSSL_DIR}/libcrypto.1.1.dylib"
+        "${OpenSSL_DIR}/lib/${OPENSSL_SSL_NAME}"
+        "${OpenSSL_DIR}/lib/${OPENSSL_CRYPTO_NAME}"
         DESTINATION ${lib_dir}/lib)
 elseif(SYSTEM_LINUX)
     install(
@@ -98,7 +105,7 @@ install(
 
 # Install common dependencies
 SET(QT_LIBS Core Gui Widgets PrintSupport Network Xml)
-if(NOT SYSTEM_LINUX)
+if(NOT SYSTEM_LINUX AND NOT DISABLE_WEBENGINE)
     SET(QT_LIBS ${QT_LIBS} WebEngineWidgets WebEngineCore Quick 
                            QuickWidgets WebChannel Qml Positioning)
 endif()
