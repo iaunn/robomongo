@@ -140,6 +140,17 @@ elseif(SYSTEM_MACOSX)
 
     # Install styles    
     install(FILES "${QT_STYLES_DIR}/libqmacstyle.dylib" DESTINATION ${styles_dir})
+
+    # Run macdeployqt on the bundle to copy dynamic libraries and rewrite library paths for portability
+    find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${QT_BIN_DIR}")
+    if(MACDEPLOYQT_EXECUTABLE)
+        install(CODE "
+            message(STATUS \"Running macdeployqt on the bundle: \${CMAKE_INSTALL_PREFIX}/Robo 3T.app\")
+            execute_process(
+                COMMAND \"${MACDEPLOYQT_EXECUTABLE}\" \"\${CMAKE_INSTALL_PREFIX}/Robo 3T.app\" -verbose=1
+            )
+        ")
+    endif()
 elseif(SYSTEM_WINDOWS)
     install_qt_plugins(
         QWindowsIntegrationPlugin
