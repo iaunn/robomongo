@@ -77,7 +77,7 @@ elseif(SYSTEM_MACOSX)
         FILES 
         "${OpenSSL_DIR}/lib/${OPENSSL_SSL_NAME}"
         "${OpenSSL_DIR}/lib/${OPENSSL_CRYPTO_NAME}"
-        DESTINATION ${lib_dir}/lib)
+        DESTINATION ${lib_dir})
 elseif(SYSTEM_LINUX)
     install(
         FILES 
@@ -104,14 +104,16 @@ install(
     DESTINATION ${license_dir})
 
 # Install common dependencies
-SET(QT_LIBS Core Gui Widgets PrintSupport Network Xml)
-if(NOT SYSTEM_LINUX AND NOT DISABLE_WEBENGINE)
-    SET(QT_LIBS ${QT_LIBS} WebEngineWidgets WebEngineCore Quick 
-                           QuickWidgets WebChannel Qml Positioning)
+if(NOT SYSTEM_MACOSX)
+    SET(QT_LIBS Core Gui Widgets PrintSupport Network Xml)
+    if(NOT SYSTEM_LINUX AND NOT DISABLE_WEBENGINE)
+        SET(QT_LIBS ${QT_LIBS} WebEngineWidgets WebEngineCore Quick 
+                               QuickWidgets WebChannel Qml Positioning)
+    endif()
+    install_qt_lib(${QT_LIBS})
+    install_qt_plugins(QGifPlugin QICOPlugin)
+    install_icu_libs()
 endif()
-install_qt_lib(${QT_LIBS})
-install_qt_plugins(QGifPlugin QICOPlugin)
-install_icu_libs()
 set(QT_STYLES_DIR ${Qt5Core_DIR}/../../../plugins/styles/)
 set(QT_BIN_DIR ${Qt5Core_DIR}/../../../bin/)
 set(QT_RESOURCES_DIR ${Qt5Core_DIR}/../../../resources/)
@@ -127,19 +129,11 @@ if(SYSTEM_LINUX)
             "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.28"              
         DESTINATION ${lib_dir})
 elseif(SYSTEM_MACOSX)
-    install_qt_lib(MacExtras DBus)
-    install_qt_plugins(
-        QCocoaIntegrationPlugin
-        QMinimalIntegrationPlugin
-        QOffscreenIntegrationPlugin)
-
     # Install icon
     install(
         FILES       "${CMAKE_SOURCE_DIR}/install/macosx/robomongo.icns"
         DESTINATION "${resources_dir}")
 
-    # Install styles    
-    install(FILES "${QT_STYLES_DIR}/libqmacstyle.dylib" DESTINATION ${styles_dir})
 
     # Run macdeployqt on the bundle to copy dynamic libraries and rewrite library paths for portability
     find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${QT_BIN_DIR}")
@@ -148,6 +142,10 @@ elseif(SYSTEM_MACOSX)
             message(STATUS \"Running macdeployqt on the bundle: \${CMAKE_INSTALL_PREFIX}/Robo 3T.app\")
             execute_process(
                 COMMAND \"${MACDEPLOYQT_EXECUTABLE}\" \"\${CMAKE_INSTALL_PREFIX}/Robo 3T.app\" -verbose=1
+            )
+            message(STATUS \"Re-signing the bundle to fix code signature: \${CMAKE_INSTALL_PREFIX}/Robo 3T.app\")
+            execute_process(
+                COMMAND codesign --force --deep --sign - \"\${CMAKE_INSTALL_PREFIX}/Robo 3T.app\"
             )
         ")
     endif()
