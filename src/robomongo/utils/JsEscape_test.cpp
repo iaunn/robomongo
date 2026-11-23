@@ -20,7 +20,7 @@ TEST(JsEscapeTests, InjectionAttemptStaysInsideLiteral)
 
 TEST(JsEscapeTests, ControlCharactersEscaped)
 {
-    EXPECT_EQ("a\\nb\\rc\\td\\x00e", escapeJsSingleQuotedString(std::string("a\nb\rc\td\0e", 10)));
+    EXPECT_EQ("a\\nb\\rc\\td\\x00e", escapeJsSingleQuotedString(std::string("a\nb\rc\td\0e", 9)));
 }
 
 TEST(JsEscapeTests, LineSeparatorsEscaped)
