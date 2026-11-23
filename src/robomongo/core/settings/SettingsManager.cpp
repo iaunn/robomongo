@@ -8,7 +8,6 @@
 #include <QVariantList>
 #include <QUuid>
 #include <QJsonArray>
-#include <QXmlStreamReader>
 #include <QDirIterator>
 
 #include <parser.h>
@@ -23,39 +22,10 @@
 #include "robomongo/core/utils/StdUtils.h"
 #include "robomongo/gui/AppStyle.h"
 #include "robomongo/utils/common.h"
-#include "robomongo/utils/qzip/qzipreader_p.h"
 #include "robomongo/utils/RoboCrypt.h"
 
 namespace Robomongo
 {
-    // 3T config files
-    auto const Studio3T_PropertiesDat {
-        QString("%1/.3T/studio-3t/properties.dat").arg(QDir::homePath())
-    };
-    auto const DataMongodb_PropertiesDat { 
-        QString("%1/.3T/data-man-mongodb/properties.dat").arg(QDir::homePath())
-    };
-    auto const MongoChefPro_PropertiesDat {
-        QString("%1/.3T/mongochef-pro/properties.dat").arg(QDir::homePath())
-    };
-    auto const MongoChefEnt_PropertiesDat {
-        QString("%1/.3T/mongochef-enterprise/properties.dat").arg(QDir::homePath())
-    };
-
-    const std::vector<std::pair<QString, QString>> S_3T_ZipFile_And_ConfigFile_List
-    {
-        { Studio3T_PropertiesDat, "Studio3T.properties" },
-        { DataMongodb_PropertiesDat, "3T.data-man-mongodb.properties" },
-        { MongoChefPro_PropertiesDat, "3T.mongochef-pro.properties" },
-        { MongoChefEnt_PropertiesDat, "3T.mongochef-enterprise.properties" }
-    };
-
-    // Extract zipFile and find the value of "anonymousID" field in propFile
-    QString extractAnonymousIDFromZip(QString const& zipFile, QString const& propfile);
-
-    // Extract "anonymousID" from a config file
-    QString extractAnonymousID(QString const& configFile);
-
     /**
         * @brief Version of schema
     */
@@ -410,76 +380,6 @@ namespace Robomongo
         return map;
     }
 
-    QString SettingsManager::getOrCreateAnonymousID(QVariantMap const& map) const
-    {
-        QString anonymousID = "";
-
-        // If anonymousID has never been created or is empty, create a new one. Otherwise load the existing.
-        if (map.contains("anonymousID")) {
-            QUuid id = map.value("anonymousID").toString();
-            if (!id.isNull())
-                anonymousID = id.toString();
-        }
-
-        // Search and import "anonymousID" from other Studio 3T config files
-        for (auto const& zipFileAndConfigFile : S_3T_ZipFile_And_ConfigFile_List) {
-            if (!anonymousID.isEmpty())
-                break;
-
-            QUuid const& id = extractAnonymousIDFromZip(zipFileAndConfigFile.first, zipFileAndConfigFile.second);
-            if (!id.isNull())
-                anonymousID = id.toString();
-        }
-                 
-        // Search and import "anonymousID" from other Robo 3T old config files starting from latest
-        for (auto const& oldConfigFile : _configFilesOfOldVersions) {         
-            if (!anonymousID.isEmpty())
-                break;
-
-            // Don't import from 1.1-Beta due to a problem where Beta might have redundantly created new UUID 
-            if (oldConfigFile == CONFIG_FILE_1_1_0_BETA)
-                continue;
-
-            // Stop searching in 1_0_RC1 or older versions, "anonymousID" is introduced in version 1.0
-            if (oldConfigFile == CONFIG_FILE_1_0_RC1)
-                break;
-
-            anonymousID = extractAnonymousID(oldConfigFile);
-        }
-
-        // Search and import "anonymousID" from any other (ideally newer version) Robo 3T config files 
-        if (anonymousID.isEmpty()) {
-            auto const dir1 = QString("%1/.3T/robo-3t").arg(QDir::homePath());
-            QDirIterator iter1 { dir1, QStringList() << "robo*.json", QDir::Files, 
-                                 QDirIterator::Subdirectories };
-            while (iter1.hasNext()) {
-                anonymousID = extractAnonymousID(iter1.next());
-                if (!anonymousID.isEmpty())
-                    break;
-            }
-
-            if (anonymousID.isEmpty()) {
-                auto const dir2 = QString("%1/.3T/robomongo").arg(QDir::homePath());
-                QDirIterator iter2 { dir2, QStringList() << "robo*.json", QDir::Files, 
-                                     QDirIterator::Subdirectories };
-                while (iter2.hasNext()) {
-                    anonymousID = extractAnonymousID(iter2.next());
-                    if (!anonymousID.isEmpty())
-                        break;
-                }
-            }
-        }
-
-        // Couldn't find/import any, create a new anonymousID
-        if (anonymousID.isEmpty())
-            anonymousID = QUuid::createUuid().toString();
-
-        anonymousID.remove('{');
-        anonymousID.remove('}');
-
-        return anonymousID;
-    }
-
     /**
      * Adds connection to the end of list and set it's uniqueID
      */
@@ -706,54 +606,5 @@ namespace Robomongo
         return (std::count_if(_connections.cbegin(), _connections.cend(), 
             [](auto conn) { return conn->imported(); }
         ));
-    }
-
-    QString extractAnonymousIDFromZip(QString const& zipFile, QString const& propfile)
-    {
-        QZipReader zipReader(zipFile);
-        if (!zipReader.exists() || !zipReader.isReadable()) 
-            return QString("");       
-
-        QXmlStreamReader reader(zipReader.fileData(propfile));
-        while (!reader.atEnd()) {
-            reader.readNext();
-            if (reader.text().toString() == "AnonymousID") {
-                reader.readNext();
-                reader.readNext();
-                reader.readNext();
-                reader.readNext();
-                return reader.text().toString();
-            }
-        }
-
-        return QString("");
-    }
-
-    QString extractAnonymousID(QString const& configFilePath)
-    {
-        if (!QFile::exists(configFilePath))
-            return QString("");
-
-        QFile oldConfigFile(configFilePath);
-        if (!oldConfigFile.open(QIODevice::ReadOnly))
-            return QString("");
-
-        bool ok = false;
-        QJson::Parser parser;
-        QVariantMap const& map = parser.parse(oldConfigFile.readAll(), &ok).toMap();
-        if (!ok)
-            return QString("");
-
-        QString anonymousID;
-        if (map.contains("anonymousID")) {
-            QUuid const& id = map.value("anonymousID").toString();
-            if (!id.isNull())
-                anonymousID = id.toString();
-        }
-
-        anonymousID.remove('{');
-        anonymousID.remove('}');
-
-        return anonymousID;
     }
 }
