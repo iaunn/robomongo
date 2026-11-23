@@ -12,11 +12,15 @@ namespace Robomongo {
         QWidget(parent), _parent(parent)
     {
         auto webView = new QWebEngineView(this);
-        QUrl const URL {
-            "https://ip.aun.in.th"        
-        };
         webView->setPage(new MyWebPage(this));
-        webView->page()->setUrl(URL);
+        // Local, offline content only - never load remote pages in the welcome tab
+        webView->page()->setHtml(
+            "<html><body style=\"font-family:sans-serif;margin:24px\">"
+            "<h2 style=\"color:#2d862d\">Robo 3T 1.4 (iaunn edition)</h2>"
+            "<p>Native <b>Apple Silicon (ARM64)</b> support, <b>OpenSSL 3</b> integration "
+            "and compatibility with <b>MongoDB 7.0 &amp; 8.x</b>.</p>"
+            "<p>No telemetry, no update checks, no remote content.</p>"
+            "</body></html>");
         webView->setContextMenuPolicy(Qt::NoContextMenu);
         webView->page()->triggerAction(QWebEnginePage::WebAction::ReloadAndBypassCache);
         webView->page()->profile()->setHttpCacheType(QWebEngineProfile::HttpCacheType::NoCache);
@@ -143,10 +147,6 @@ namespace Robomongo
     WelcomeTab::WelcomeTab(QScrollArea *parent) :
         QWidget(parent), _parent(parent)
     {
-        _pic1_URL = "https://files.studio3t.com/rm-feed_3t_io/" + IMAGE_PATH;
-        _text1_URL = "https://files.studio3t.com/rm-feed_3t_io/" + CONTENTS_PATH;
-        _rss_URL = "https://blog.robomongo.org/rss/";
-
 #ifdef __APPLE__
         constexpr int HEADER_POINT_SIZE = 10;
 #else 
@@ -195,26 +195,6 @@ namespace Robomongo
         _blogsHeader = new QLabel(BlogsHeader);
         _blogsHeader->setHidden(true);
         _blogsHeader->setFont(headerFont);
-
-        //// --- Network Access Managers (Disabled for local custom welcome page)
-        /*
-        if (!AppRegistry::instance().settingsManager()->disableHttpsFeatures()) {
-            auto text1Downloader = new QNetworkAccessManager;
-            VERIFY(connect(text1Downloader, SIGNAL(finished(QNetworkReply*)),
-                this, SLOT(on_downloadTextReply(QNetworkReply*))));
-            text1Downloader->head(QNetworkRequest(_text1_URL));
-
-            auto pic1Downloader = new QNetworkAccessManager;
-            VERIFY(connect(pic1Downloader, SIGNAL(finished(QNetworkReply*)),
-                this, SLOT(on_downloadPictureReply(QNetworkReply*))));
-            pic1Downloader->head(QNetworkRequest(_pic1_URL));
-
-            auto rssDownloader = new QNetworkAccessManager;
-            VERIFY(connect(rssDownloader, SIGNAL(finished(QNetworkReply*)),
-                this, SLOT(on_downloadRssReply(QNetworkReply*))));
-            rssDownloader->get(QNetworkRequest(_rss_URL));
-        }
-        */
 
         //// --- Layouts
         _allBlogsButton = new QPushButton("All Blog Posts");

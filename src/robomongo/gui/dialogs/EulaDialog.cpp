@@ -209,50 +209,8 @@ namespace Robomongo
 
     void EulaDialog::postUserData() const
     {
-        if (_emailEdit->text().isEmpty() || 
-            AppRegistry::instance().settingsManager()->disableHttpsFeatures()
-        )
-            return;
-
-        // OS string
-#ifdef _WIN32
-        QString const OS = "win";
-#elif __APPLE__
-        QString const OS = "osx";
-#elif __linux__
-        QString const OS = "linux";
-#else
-        QString const OS = "unknown";
-#endif
-
-        // Timezone string
-        QDateTime now = QDateTime::currentDateTime();
-        now.setOffsetFromUtc(now.offsetFromUtc());
-        QString dateAndTimezone = now.toString(Qt::ISODate);
-        QString const date = QDateTime::currentDateTime().toString(Qt::ISODate);
-        QString const timezone = "UTC" + dateAndTimezone.remove(date);
-
-        // Build post data and send
-        QJsonObject jsonStr {
-            { "email", _emailEdit->text() },
-            { "firstName", _nameEdit->text() },
-            { "lastName", _lastNameEdit->text() },
-            { "phone", _phone->text() },
-            { "company", _company->text() },
-            { "os", OS },
-            { "timezone", timezone }
-        };      
-
-        QJsonDocument jsonDoc(jsonStr);
-        QUrlQuery postData(jsonDoc.toJson());
-        postData = QUrlQuery("rd=" + postData.toString(QUrl::FullyEncoded).toUtf8());
-      
-        QNetworkRequest request(QUrl("https://rm-form.3t.io/"));
-        request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
-
-        auto networkManager = new QNetworkAccessManager;
-        _reply = networkManager->post(request, postData.toString(QUrl::FullyEncoded).toUtf8());
-        debugLog("EulaDialog: Form posted");
+        // Intentionally a no-op in the iaunn edition: user-entered contact details
+        // (email, name, phone, company) are never sent to any remote server.
     }
 
     void EulaDialog::saveWindowSettings() const
