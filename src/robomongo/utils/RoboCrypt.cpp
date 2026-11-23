@@ -12,6 +12,10 @@
 #include <QString>
 #include <QTextStream>
 
+#ifndef _WIN32
+#include <sys/stat.h>
+#endif
+
 namespace Robomongo {
 
     long long RoboCrypt::_KEY = 0;
@@ -53,14 +57,24 @@ namespace Robomongo {
             std::uniform_int_distribution<long long int> dist{ std::llround(std::pow(2,61)), 
                                                                std::llround(std::pow(2,62)) };
             _KEY = dist(engine);
-            // Save the key into file
+            // Save the key into file. The file must never be readable by others, not even briefly,
+            // so create it under a restrictive umask instead of chmod-ing it afterwards.
+#ifndef _WIN32
+            auto const oldUmask = ::umask(077);
+#endif
             QFile file{ QString::fromStdString(KEY_FILE) };
-            if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+            bool const opened = file.open(QIODevice::WriteOnly | QIODevice::Text);
+#ifndef _WIN32
+            ::umask(oldUmask);
+#endif
+            if (!opened) {
                 addToRoboCryptLogs("RoboCrypt: Failed to save the key into file: " + KEY_FILE, MongoSeverity::Error());
-            file.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner);
-                            
-            QTextStream out(&file);
-            out << QString::number(_KEY);
+            }
+            else {
+                file.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+                QTextStream out(&file);
+                out << QString::number(_KEY);
+            }
         }
     }
 

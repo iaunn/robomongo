@@ -1,5 +1,8 @@
 #include "robomongo/core/settings/SettingsManager.h"
 
+#ifndef _WIN32
+#include <sys/stat.h>
+#endif
 #include <QDir>
 #include <QFile>
 #include <QVariantList>
@@ -167,7 +170,15 @@ namespace Robomongo
         QVariantMap const& map = convertToMap();
 
         QFile f(ConfigFilePath);
-        if (!f.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        // Create the file owner-only from the start (it holds encrypted credentials)
+#ifndef _WIN32
+        auto const oldUmask = ::umask(077);
+#endif
+        bool const opened = f.open(QIODevice::WriteOnly | QIODevice::Truncate);
+#ifndef _WIN32
+        ::umask(oldUmask);
+#endif
+        if (!opened) {
             LOG_MSG("ERROR: Could not write settings to: " + ConfigFilePath, mongo::logger::LogSeverity::Error());
             return false;
         }
