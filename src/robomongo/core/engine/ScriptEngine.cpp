@@ -1,5 +1,6 @@
 #include "robomongo/core/engine/ScriptEngine.h"
 
+#include <algorithm>
 #include <QVector> // unable to put this include below. doesn't compile on GCC 4.7.2 and Qt 4.8
 #include <QDir>
 #include <QStringList>
@@ -65,7 +66,21 @@ namespace
         return out;
     }
 
+    // The SpiderMonkey proxy scope runs JS on its own implementation thread and reports results
+    // through process-wide buffers (__objects/__logs/__type), and init() mutates the global
+    // 'dbConnect'. Until those buffers are made per-scope, exec()/init() must be serialized.
     QMutex s_globalScriptEngineMutex(QMutex::Recursive);
+
+    // Wipes a std::string (e.g. plaintext connect script holding credentials) when leaving scope,
+    // including on exceptions.
+    struct ScopedClear {
+        explicit ScopedClear(std::string &s) : _s(s) {}
+        ~ScopedClear() {
+            std::fill(_s.begin(), _s.end(), '\0');
+            _s.clear();
+        }
+        std::string &_s;
+    };
 }
 
 namespace mongo {
@@ -113,6 +128,11 @@ namespace Robomongo
 
         {
             mongo::shell_utils::dbConnect = ss.str();
+            ss.str(std::string());   // do not keep a second copy of the credentials in the stream
+            {
+            // Wipes the plaintext credentials from global memory right after scope initialization,
+            // also if setup()/newScope() throws.
+            ScopedClear dbConnectGuard(mongo::shell_utils::dbConnect);
 
             // v0.9
             // mongo::isShell = true;
@@ -124,9 +144,7 @@ namespace Robomongo
 
             _scope.reset(mongo::getGlobalScriptEngine()->newScope());
             _engine = mongo::getGlobalScriptEngine();
-
-            // Clear plaintext credentials from global memory immediately after scope initialization
-            mongo::shell_utils::dbConnect.clear();
+            }
 
             // Load '.mongorc.js' from user's home directory
             if (isLoadMongoRcJs) {
