@@ -136,6 +136,16 @@ elseif(SYSTEM_MACOSX)
         DESTINATION "${resources_dir}")
 
 
+    # Code signing identity: "-" = ad-hoc (local use only). For distribution pass a Developer ID,
+    # e.g. -DCODESIGN_IDENTITY="Developer ID Application: Name (TEAMID)" - the hardened runtime is
+    # then enabled as required for notarization (xcrun notarytool submit ...).
+    set(CODESIGN_IDENTITY "-" CACHE STRING "macOS code signing identity (\"-\" for ad-hoc)")
+    if(CODESIGN_IDENTITY STREQUAL "-")
+        set(CODESIGN_EXTRA_OPTIONS "")
+    else()
+        set(CODESIGN_EXTRA_OPTIONS --options runtime --timestamp)
+    endif()
+
     # Run macdeployqt on the bundle to copy dynamic libraries and rewrite library paths for portability
     find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${QT_BIN_DIR}")
     if(MACDEPLOYQT_EXECUTABLE)
@@ -150,7 +160,7 @@ elseif(SYSTEM_MACOSX)
             endif()
             message(STATUS \"Re-signing the bundle to fix code signature: \${CMAKE_INSTALL_PREFIX}/Robo 3T.app\")
             execute_process(
-                COMMAND codesign --force --deep --sign - \"\${CMAKE_INSTALL_PREFIX}/Robo 3T.app\"
+                COMMAND codesign --force --deep ${CODESIGN_EXTRA_OPTIONS} --sign \"${CODESIGN_IDENTITY}\" \"\${CMAKE_INSTALL_PREFIX}/Robo 3T.app\"
                 RESULT_VARIABLE CODESIGN_RESULT
             )
             if(NOT CODESIGN_RESULT EQUAL 0)
