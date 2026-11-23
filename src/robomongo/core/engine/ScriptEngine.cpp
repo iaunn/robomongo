@@ -1,6 +1,7 @@
 #include "robomongo/core/engine/ScriptEngine.h"
 
 #include <algorithm>
+#include "robomongo/utils/JsEscape.h"
 #include <QVector> // unable to put this include below. doesn't compile on GCC 4.7.2 and Qt 4.8
 #include <QDir>
 #include <QStringList>
@@ -48,22 +49,6 @@ namespace
         }
         output.push_back(s.substr(prev_pos, pos-prev_pos)); // Last word
         return output;
-    }
-
-    std::string escapeJsSingleQuotedString(const std::string &input)
-    {
-        std::string out;
-        out.reserve(input.size() + 8);
-        for (char c : input) {
-            switch (c) {
-                case '\\': out += "\\\\"; break;
-                case '\'': out += "\\'";  break;
-                case '\n': out += "\\n";  break;
-                case '\r': out += "\\r";  break;
-                default:   out += c;      break;
-            }
-        }
-        return out;
     }
 
     // The SpiderMonkey proxy scope runs JS on its own implementation thread and reports results

@@ -21,6 +21,7 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 set(ROBO_SRC_DIR ${CMAKE_HOME_DIRECTORY}/src/robomongo)
 set(SOURCES_TEST
     ${ROBO_SRC_DIR}/utils/RoboCrypt_test.cpp
+    ${ROBO_SRC_DIR}/utils/JsEscape_test.cpp
     ${ROBO_SRC_DIR}/utils/StringOperations_test.cpp
     ${ROBO_SRC_DIR}/core/HexUtils_test.cpp
 )
