@@ -48,6 +48,24 @@ namespace
         output.push_back(s.substr(prev_pos, pos-prev_pos)); // Last word
         return output;
     }
+
+    std::string escapeJsSingleQuotedString(const std::string &input)
+    {
+        std::string out;
+        out.reserve(input.size() + 8);
+        for (char c : input) {
+            switch (c) {
+                case '\\': out += "\\\\"; break;
+                case '\'': out += "\\'";  break;
+                case '\n': out += "\\n";  break;
+                case '\r': out += "\\r";  break;
+                default:   out += c;      break;
+            }
+        }
+        return out;
+    }
+
+    QMutex s_globalScriptEngineMutex(QMutex::Recursive);
 }
 
 namespace mongo {
@@ -71,6 +89,7 @@ namespace Robomongo
 
     void ScriptEngine::init(bool isLoadMongoRcJs, const std::string& serverAddr, const std::string& dbName)
     {
+        QMutexLocker globalLock(&s_globalScriptEngineMutex);
         QMutexLocker lock(&_mutex);
 
         std::string connectDatabase = dbName.empty() ? "test" : dbName;
@@ -80,7 +99,7 @@ namespace Robomongo
 
         std::stringstream ss;
         auto hostAndPort = serverAddr.empty() ? _connection->hostAndPort().toString() : serverAddr;
-        ss << "db = connect('" << hostAndPort << "/" << connectDatabase;
+        ss << "db = connect('" << escapeJsSingleQuotedString(hostAndPort) << "/" << escapeJsSingleQuotedString(connectDatabase);
 
 //        v0.9
 //        ss << "db = connect('" << _connection->serverHost() << ":" << _connection->serverPort() << _connection->sslInfo() << _connection->sshInfo() << "/" << connectDatabase;
@@ -89,8 +108,8 @@ namespace Robomongo
             ss << "')";
         else
             ss << "', '"
-               << _connection->primaryCredential()->userName() << "', '"
-               << _connection->primaryCredential()->userPassword() << "')";
+               << escapeJsSingleQuotedString(_connection->primaryCredential()->userName()) << "', '"
+               << escapeJsSingleQuotedString(_connection->primaryCredential()->userPassword()) << "')";
 
         {
             mongo::shell_utils::dbConnect = ss.str();
@@ -105,6 +124,9 @@ namespace Robomongo
 
             _scope.reset(mongo::getGlobalScriptEngine()->newScope());
             _engine = mongo::getGlobalScriptEngine();
+
+            // Clear plaintext credentials from global memory immediately after scope initialization
+            mongo::shell_utils::dbConnect.clear();
 
             // Load '.mongorc.js' from user's home directory
             if (isLoadMongoRcJs) {
@@ -170,6 +192,7 @@ namespace Robomongo
     MongoShellExecResult ScriptEngine::exec(const std::string &originalScript, const std::string &dbName, 
                                             AggrInfo aggrInfo /* = AggrInfo() */)
     {
+        QMutexLocker globalLock(&s_globalScriptEngineMutex);
         QMutexLocker lock(&_mutex);
 
         if (!_scope) {
@@ -270,7 +293,7 @@ namespace Robomongo
             std::stringstream ss;
 
             // Switch to database
-            ss << "shellHelper.use('" << dbName << "');" << std::endl;
+            ss << "shellHelper.use('" << escapeJsSingleQuotedString(dbName) << "');" << std::endl;
 
             // Always allow to read from slave
             ss << "rs.slaveOk();" << std::endl;

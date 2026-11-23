@@ -521,14 +521,12 @@ namespace Robomongo
         windowMenu->addSeparator();
 
         auto const& settings { AppRegistry::instance().settingsManager() };
-        if (!settings->disableHttpsFeatures()) {
-            // Open welcome tab action
-            auto openWelcomeTabAction = new QAction("Open/Refresh Welcome Tab", this);
-            openWelcomeTabAction->setShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_W);
-            openWelcomeTabAction->setVisible(true);
-            VERIFY(connect(openWelcomeTabAction, SIGNAL(triggered()), SLOT(openWelcomeTab())));
-            windowMenu->addAction(openWelcomeTabAction);
-        }        
+        // Open welcome tab action
+        auto openWelcomeTabAction = new QAction("Open/Refresh Welcome Tab", this);
+        openWelcomeTabAction->setShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_W);
+        openWelcomeTabAction->setVisible(true);
+        VERIFY(connect(openWelcomeTabAction, SIGNAL(triggered()), SLOT(openWelcomeTab())));
+        windowMenu->addAction(openWelcomeTabAction);        
 
         auto toolbarsSettings = AppRegistry::instance().settingsManager()->toolbars();
 
@@ -1425,33 +1423,7 @@ namespace Robomongo
 
     void MainWindow::checkUpdates()
     {
-        auto const& settings { AppRegistry::instance().settingsManager() };
-        if (!settings->checkForUpdates() || settings->disableHttpsFeatures())
-            return;
-
-#ifdef _WIN32
-        QString const OS = "win";
-#elif __APPLE__
-        QString const OS = "osx";
-#elif __linux__
-        QString const OS = "linux";
-#else
-        QString const OS = "unknown";
-#endif
-
-        // Build dbVersionsConnected in following format: "3.4.3,2.6.0,..."
-        QString dbVersionsConnected;
-        for (auto const& version : settings->dbVersionsConnected())
-            dbVersionsConnected.append(version + ',');
-        
-        if (dbVersionsConnected.endsWith(','))
-            dbVersionsConnected.chop(1);
-
-        // softwareId=8: Robomongo product ID 
-        QUrl url("https://updates.3t.io/check.php?os=" + OS + "&softwareId=8&softwareVersion=" +
-                  QString(PROJECT_VERSION) + "&licenseInfo=FREE&setup=" + settings->anonymousID() + 
-                  "&dbVersionsConnected=" + dbVersionsConnected + "&notify=true#");
-
-        _networkAccessManager->get(QNetworkRequest(url));
+        // Disabled in iaunn edition for privacy and security (prevents sending telemetry to updates.3t.io)
+        return;
     }
 }

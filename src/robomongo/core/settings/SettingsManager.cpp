@@ -116,6 +116,8 @@ namespace Robomongo
     {
         if (!QDir().mkpath(ConfigDir))
             LOG_MSG("ERROR: Could not create settings path: " + ConfigDir, mongo::logger::LogSeverity::Error());
+        else
+            QFile::setPermissions(ConfigDir, QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner);
 
         RoboCrypt::initKey();
         if (!load()) {  // if load fails (probably due to non-existing config. file or directory)
@@ -141,6 +143,7 @@ namespace Robomongo
             return false;
 
         QFile f(ConfigFilePath);
+        f.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner);
         if (!f.open(QIODevice::ReadOnly))
             return false;
 
@@ -168,6 +171,7 @@ namespace Robomongo
             LOG_MSG("ERROR: Could not write settings to: " + ConfigFilePath, mongo::logger::LogSeverity::Error());
             return false;
         }
+        f.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner);
 
         bool ok;
         QJson::Serializer s;
@@ -225,7 +229,7 @@ namespace Robomongo
                                  map.value("programExitedNormally").toBool() : true;
 
         _disableHttpsFeatures = map.contains("disableHttpsFeatures") ? 
-                                map.value("disableHttpsFeatures").toBool() : false;
+                                map.value("disableHttpsFeatures").toBool() : true;
 
         _debugMode = map.contains("debugMode") ? map.value("debugMode").toBool() : false;
 
@@ -244,8 +248,8 @@ namespace Robomongo
         if (map.contains("dbVersionsConnected"))
             _dbVersionsConnected = map.value("dbVersionsConnected").toStringList().toSet();
         
-        // Load anonymousID
-        _anonymousID = getOrCreateAnonymousID(map);
+        // Do not scan or track anonymousID across filesystem for privacy
+        _anonymousID = "";
 
         // Load AutocompletionMode
         if (map.contains("autocompletionMode")) {
@@ -263,8 +267,7 @@ namespace Robomongo
         if (_batchSize == 0)
             _batchSize = 50;
 
-        if (map.contains("checkForUpdates"))
-            _checkForUpdates = map.value("checkForUpdates").toBool();
+        _checkForUpdates = false;
 
         _currentStyle = map.value("style").toString();
         if (_currentStyle.isEmpty()) {

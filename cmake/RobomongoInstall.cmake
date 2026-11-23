@@ -73,10 +73,11 @@ elseif(SYSTEM_MACOSX)
         set(OPENSSL_SSL_NAME "libssl.1.1.dylib")
         set(OPENSSL_CRYPTO_NAME "libcrypto.1.1.dylib")
     endif()
+    get_filename_component(OPENSSL_LIB_DIR "${OPENSSL_SSL_LIBRARY}" DIRECTORY)
     install(
         FILES 
-        "${OpenSSL_DIR}/lib/${OPENSSL_SSL_NAME}"
-        "${OpenSSL_DIR}/lib/${OPENSSL_CRYPTO_NAME}"
+        "${OPENSSL_LIB_DIR}/${OPENSSL_SSL_NAME}"
+        "${OPENSSL_LIB_DIR}/${OPENSSL_CRYPTO_NAME}"
         DESTINATION ${lib_dir})
 elseif(SYSTEM_LINUX)
     install(
@@ -142,11 +143,19 @@ elseif(SYSTEM_MACOSX)
             message(STATUS \"Running macdeployqt on the bundle: \${CMAKE_INSTALL_PREFIX}/Robo 3T.app\")
             execute_process(
                 COMMAND \"${MACDEPLOYQT_EXECUTABLE}\" \"\${CMAKE_INSTALL_PREFIX}/Robo 3T.app\" -verbose=1
+                RESULT_VARIABLE MACDEPLOYQT_RESULT
             )
+            if(NOT MACDEPLOYQT_RESULT EQUAL 0)
+                message(FATAL_ERROR \"macdeployqt failed with exit code \${MACDEPLOYQT_RESULT}\")
+            endif()
             message(STATUS \"Re-signing the bundle to fix code signature: \${CMAKE_INSTALL_PREFIX}/Robo 3T.app\")
             execute_process(
                 COMMAND codesign --force --deep --sign - \"\${CMAKE_INSTALL_PREFIX}/Robo 3T.app\"
+                RESULT_VARIABLE CODESIGN_RESULT
             )
+            if(NOT CODESIGN_RESULT EQUAL 0)
+                message(FATAL_ERROR \"codesign failed with exit code \${CODESIGN_RESULT}\")
+            endif()
         ")
     endif()
 elseif(SYSTEM_WINDOWS)

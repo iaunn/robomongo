@@ -628,12 +628,15 @@ static rbm_socket_t socket_connect(struct rbm_session* session, char *ip, int po
     sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if (sock == rbm_socket_invalid) {
         ssh_log_error(session, "Failed to open socket");
+        freeaddrinfo(res);
         return -1;
     }
 
     /* Connect to SSH server */
     if (connect(sock, res->ai_addr, res->ai_addrlen) != 0) {
         ssh_log_error(session, "Failed to connect to %s:%d", ip, port);
+        rbm_socket_close(sock);
+        freeaddrinfo(res);
         return -1;
     }
 
@@ -666,6 +669,7 @@ rbm_socket_t socket_listen(struct rbm_session *rsession, char *ip, int *port) {
     sin.sin_port = htons(0); // Bind to any available port (htons is not needed, but still it's here)
     if (INADDR_NONE == (sin.sin_addr.s_addr = inet_addr(ip))) {
         ssh_log_error(rsession, "inet_addr");
+        rbm_socket_close(listensock);
         return rbm_socket_invalid;
     }
 
@@ -673,17 +677,20 @@ rbm_socket_t socket_listen(struct rbm_session *rsession, char *ip, int *port) {
     setsockopt(listensock, SOL_SOCKET, SO_REUSEADDR, &sockopt, sizeof(sockopt));
     sinlen = sizeof(sin);
     if (-1 == bind(listensock, (struct sockaddr *)&sin, sinlen)) {
-        ssh_log_error(rsession, "Cannot bind to port %d", port);
+        ssh_log_error(rsession, "Cannot bind to port %d", *port);
+        rbm_socket_close(listensock);
         return rbm_socket_invalid;
     }
 
     if (-1 == listen(listensock, 2)) {
         ssh_log_error(rsession, "Failed to listen opened socket");
+        rbm_socket_close(listensock);
         return rbm_socket_invalid;
     }
 
     if (getsockname(listensock, (struct sockaddr *)&sin, &sinlen) == -1) {
         ssh_log_error(rsession, "Failed to get socket address");
+        rbm_socket_close(listensock);
         return rbm_socket_invalid;
     }
 

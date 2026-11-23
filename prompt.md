@@ -42,6 +42,21 @@ This document summarizes the complete requirements, development history, debuggi
 * **UI Titles**:
   * Updated CMake compile definitions and About Dialog templates to include `(iaunn edition)`.
 
+### 4. Security, Privacy & Stability Hardening
+* **Zero Telemetry & Anti-Tracking**:
+  * Disabled automatic background update checks and telemetry transmissions to `https://updates.3t.io/check.php` in `MainWindow.cpp`.
+  * Stopped scanning local directories for legacy Studio 3T / Robo 3T `anonymousID` tracking identifiers in `SettingsManager.cpp`.
+* **Local Credential File Hardening**:
+  * Enforced strict owner-only permissions (`0600` on files, `0700` on directories) for `~/.3T/robo-3t/robo3t.key` and `robo3t.json` in `RoboCrypt.cpp` and `SettingsManager.cpp`.
+* **JavaScript Injection & Memory Credential Protection**:
+  * Added proper escaping for single quotes, backslashes, and control characters when constructing `connect(...)` and `shellHelper.use(...)` calls in `ScriptEngine.cpp`, and used `BSONObj::jsonString()` when removing functions from `db.system.js` in `MongoWorker.cpp`.
+  * Cleared plaintext credentials from `mongo::shell_utils::dbConnect` immediately after initializing the SpiderMonkey scope.
+* **Thread-Safety & Memory Safety**:
+  * Added global mutex synchronization in `ScriptEngine.cpp` and `MongoWorker.cpp` to prevent cross-thread data races on shared SpiderMonkey output buffers (`__objects`, `__logs`, `__type`) and global SSL parameters (`mongo::sslGlobalParams`).
+  * Fixed a null pointer dereference bug in `MongoWorker::timerEvent` when invalidating the autocompletion cache.
+  * Fixed socket and `addrinfo` resource leaks on connection failures in `src/robomongo/ssh/ssh.c`.
+  * In `robomongo-shell`, fixed a heap buffer overflow (`std::max` -> `std::min`) in `SSLConnectionApple::read_func` and disabled legacy TLS 1.0/1.1 protocols by default (`ssl_manager_apple.cpp`).
+
 ---
 
 ## 💾 Code Repositories & Git History
@@ -52,6 +67,7 @@ This document summarizes the complete requirements, development history, debuggi
   1. `2ecafcf899`: *Build: Fix SCons scripts for Python 3.10+ and macOS ARM64 compilation*
   2. `adf685d79e`: *Third-Party: Add macOS ARM64 SpiderMonkey JIT/exception handler support and Boost C++17 fixes*
   3. `b5377728db`: *Client: Implement MongoDB 7.0 compatibility by running writes synchronously and converting ntoreturn to limit*
+  4. `da2f1a37e8`: *Security: Enforce TLS 1.2+, fix Apple SSL buffer overflow, and fix AppleClang 21 s2polyline build*
 
 ### 2. `robomongo` (Branch: `feature/apple-silicon-mongodb-upgrade`)
 * **Fork**: `git@github.com:iaunn/robomongo.git`
@@ -61,6 +77,8 @@ This document summarizes the complete requirements, development history, debuggi
   3. `a7cb69c5`: *Packaging: Update macOS database shell objects list for ARM64 and MongoDB 7.0*
   4. `9c031074`: *Branding: Update project name and version title to include '(iaunn edition)'*
   5. `18befbf9`: *Branding: Implement custom welcome tab and window title for iaunn edition*
+  6. `3e575857`: *Build: Integrate automated macdeployqt deployment during CPack packaging*
+  7. `48be556e`: *Build: Exclude manual copies on macOS to let macdeployqt deploy and rewrite nested framework dependencies recursively*
 
 ---
 
@@ -68,14 +86,14 @@ This document summarizes the complete requirements, development history, debuggi
 
 ### 1. Rebuild the Database Shell
 ```bash
-cd /Users/iaunn/workspace/iaunn/robo/robomongo-shell
+cd /Users/iaunn/workspace/iaunn/robomongo-shell
 bin/build
 ```
 
 ### 2. Rebuild the Client App
 ```bash
-cd /Users/iaunn/workspace/iaunn/robo/robomongo
-export ROBOMONGO_CMAKE_PREFIX_PATH="/opt/homebrew/opt/qt@5;/Users/iaunn/workspace/iaunn/robo/robomongo-shell;/opt/homebrew/opt/openssl@3"
+cd /Users/iaunn/workspace/iaunn/robomongo
+export ROBOMONGO_CMAKE_PREFIX_PATH="/opt/homebrew/opt/qt@5;/Users/iaunn/workspace/iaunn/robomongo-shell;/opt/homebrew/opt/openssl@3"
 bin/configure release
 bin/build
 bin/install
@@ -83,5 +101,5 @@ bin/install
 
 ### 3. Install App to System Applications
 ```bash
-cp -R "/Users/iaunn/workspace/iaunn/robo/robomongo/build/release/install/Robo 3T.app" /Applications/
+cp -R "/Users/iaunn/workspace/iaunn/robomongo/build/release/install/Robo 3T.app" /Applications/
 ```

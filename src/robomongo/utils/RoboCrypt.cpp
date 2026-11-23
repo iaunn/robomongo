@@ -24,11 +24,16 @@ namespace Robomongo {
             _roboCryptLogs.push_back({ msg, severity });
         };
 
-        const auto KEY_FILE = QString("%1/.3T/robo-3t/robo3t.key").arg(QDir::homePath()).toStdString();
+        const auto KEY_DIR = QString("%1/.3T/robo-3t").arg(QDir::homePath());
+        QDir().mkpath(KEY_DIR);
+        QFile::setPermissions(KEY_DIR, QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner);
+
+        const auto KEY_FILE = QString("%1/robo3t.key").arg(KEY_DIR).toStdString();
         QString fileContent;
         QFileInfo const fileInfo{ QString::fromStdString(KEY_FILE) };
         if (fileInfo.exists() && fileInfo.isFile()) {   // a) Read existing key from file
             QFile keyFile{ QString::fromStdString(KEY_FILE) };
+            keyFile.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner);
             if (!keyFile.open(QIODevice::ReadOnly))
                 addToRoboCryptLogs("RoboCrypt: Failed to open key file: " + KEY_FILE, MongoSeverity::Error());
 
@@ -52,6 +57,7 @@ namespace Robomongo {
             QFile file{ QString::fromStdString(KEY_FILE) };
             if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
                 addToRoboCryptLogs("RoboCrypt: Failed to save the key into file: " + KEY_FILE, MongoSeverity::Error());
+            file.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner);
                             
             QTextStream out(&file);
             out << QString::number(_KEY);

@@ -219,12 +219,12 @@ namespace Robomongo
         bool _lineNumbers;
         bool _disableConnectionShortcuts;
         bool _programExitedNormally = true;
-        bool _disableHttpsFeatures = false;
+        bool _disableHttpsFeatures = true;
         bool _debugMode = false;
         QSet<QString> _acceptedEulaVersions;
         QSet<QString> _dbVersionsConnected;
         int _batchSize;
-        bool _checkForUpdates = true;
+        bool _checkForUpdates = false;
         QString _currentStyle;
         QString _textFontFamily;
         int _textFontPointSize;

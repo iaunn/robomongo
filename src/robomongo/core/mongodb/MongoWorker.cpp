@@ -30,6 +30,11 @@
 
 namespace Robomongo
 {
+    namespace
+    {
+        QMutex s_globalSslMutex(QMutex::Recursive);
+    }
+
     std::string const APP_VERSION = PROJECT_VERSION;
     std::string const APP_NAME_VERSION { "robo3t-" + APP_VERSION };
 
@@ -64,7 +69,7 @@ namespace Robomongo
             return;
         }
 
-        if (_dbAutocompleteCacheTimerId == event->timerId() && !_scriptEngine) {
+        if (_dbAutocompleteCacheTimerId == event->timerId() && _scriptEngine) {
             _scriptEngine->invalidateDbCollectionsCache();
             return;
         }
@@ -908,7 +913,8 @@ namespace Robomongo
     {
         try {
             if (event->dbVersion() >= 3.4) {
-                auto const cmd = "db.system.js.remove( { _id : \"" + event->functionName() + "\" } )";
+                mongo::BSONObj const queryObj = BSON("_id" << event->functionName());
+                auto const cmd = "db.system.js.remove(" + queryObj.jsonString() + ")";
                 MongoShellExecResult const& result = _scriptEngine->exec(cmd, event->database());
                 if (result.error())
                     throw std::runtime_error(result.errorMessage());
@@ -931,6 +937,7 @@ namespace Robomongo
 
     std::pair<mongo::DBClientBase*, std::string> MongoWorker::getConnection(bool mayReturnNull /* = false */)
     {
+        QMutexLocker sslLock(&s_globalSslMutex);
         configureSSL();
 
         // --- Perform connection ---
@@ -984,6 +991,7 @@ namespace Robomongo
 
     void MongoWorker::configureSSL()
     {
+        QMutexLocker sslLock(&s_globalSslMutex);
         // As a precaution reset SSL global params for any kind of connection request (SSL or non-SSL)
         resetGlobalSSLparams();
         // Update global SSL mode and global mongo SSL settings
@@ -1000,6 +1008,7 @@ namespace Robomongo
 
     void MongoWorker::updateGlobalSSLparams() const
     {
+        QMutexLocker sslLock(&s_globalSslMutex);
         resetGlobalSSLparams();
         const SslSettings * const sslSettings = _connSettings->sslSettings();
         mongo::sslGlobalParams.sslAllowInvalidCertificates = sslSettings->allowInvalidCertificates();
@@ -1021,6 +1030,7 @@ namespace Robomongo
 
     void MongoWorker::resetGlobalSSLparams() const
     {
+        QMutexLocker sslLock(&s_globalSslMutex);
         mongo::sslGlobalParams.sslAllowInvalidCertificates = false;
         mongo::sslGlobalParams.sslCAFile = "";
         mongo::sslGlobalParams.sslPEMKeyFile = "";

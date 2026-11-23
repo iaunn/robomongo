@@ -164,7 +164,21 @@ namespace Robomongo
         _whatsNewText = new QLabel;
         _whatsNewText->setText(
             "<h3>Welcome to the iaunn edition of Robo 3T!</h3>"
-            "<p>This version features native Apple Silicon support and full compatibility with MongoDB 7.0 & 8.3.</p>"
+            "<p>This version features native <b>Apple Silicon (ARM64)</b> support, <b>OpenSSL 3</b> integration, "
+            "and full compatibility with <b>MongoDB 7.0 &amp; 8.x</b>.</p>"
+            "<h4>Security &amp; Privacy Enhancements</h4>"
+            "<ul>"
+            "<li><b>Zero Telemetry:</b> Remote Studio 3T update checks, tracking IDs, and external analytics are completely disabled.</li>"
+            "<li><b>Credential Hardening:</b> Enforced strict owner-only (<code>0600</code>) permissions on local encryption keys and configuration files.</li>"
+            "<li><b>TLS 1.2+ &amp; Thread Safety:</b> Disabled legacy TLS 1.0/1.1 protocols and added thread-safe isolation across concurrent database shells.</li>"
+            "</ul>"
+            "<h4>Quick Shortcuts</h4>"
+            "<ul>"
+            "<li><b>&#8984; + N</b> &mdash; Manage Connections</li>"
+            "<li><b>&#8984; + T</b> &mdash; Open New Shell Tab</li>"
+            "<li><b>F5</b> or <b>&#8984; + Enter</b> &mdash; Execute Query</li>"
+            "<li><b>F2 / F3 / F4</b> &mdash; Switch Tree / Table / Text View Mode</li>"
+            "</ul>"
         );
         _whatsNewText->setTextInteractionFlags(Qt::TextSelectableByMouse);
         _whatsNewText->setTextFormat(Qt::RichText);
