@@ -252,7 +252,7 @@ elseif(SYSTEM_MACOSX)
         OUTPUT_NAME "Robo 3T"
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/install/macosx/Info.plist.in"
         MACOSX_BUNDLE_BUNDLE_NAME "Robo 3T"
-        MACOSX_BUNDLE_GUI_IDENTIFIER "com.3tsoftwarelabs.robo3t"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.iaunn.robo3t"
         MACOSX_BUNDLE_INFO_STRING "Robo 3T ${PROJECT_VERSION} (iaunn edition). Copyright 3T Software Labs Ltd, 2014 - ${CURRENT_YEAR}"
         MACOSX_BUNDLE_SHORT_VERSION "${PROJECT_VERSION}"
         MACOSX_BUNDLE_LONG_VERSION "${PROJECT_VERSION}"
